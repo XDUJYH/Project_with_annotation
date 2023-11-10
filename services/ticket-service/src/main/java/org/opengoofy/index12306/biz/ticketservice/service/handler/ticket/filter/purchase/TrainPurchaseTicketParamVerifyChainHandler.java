@@ -59,6 +59,7 @@ public class TrainPurchaseTicketParamVerifyChainHandler implements TrainPurchase
     @Override
     public void handler(PurchaseTicketReqDTO requestParam) {
         // 查询会员购票车次是否存在，通过封装后安全的 Get 方法
+        //如TrainDO(id=1, trainNumber=G35, trainType=0, trainTag=0,1,2, trainBrand=0,6, startStation=北京南, endStation=宁波, startRegion=北京, endRegion=宁波, saleTime=Mon May 15 14:30:00 CST 2023, saleStatus=0, departureTime=Thu Jun 01 09:56:00 CST 2023, arrivalTime=Thu Jun 01 15:14:00 CST 2023)
         TrainDO trainDO = distributedCache.safeGet(
                 TRAIN_INFO + requestParam.getTrainId(),
                 TrainDO.class,
@@ -82,10 +83,12 @@ public class TrainPurchaseTicketParamVerifyChainHandler implements TrainPurchase
             }
         }
         // 车站是否存在车次中，以及车站的顺序是否正确
+        //TrainDO(id=1, trainNumber=G35, trainType=0, trainTag=0,1,2, trainBrand=0,6, startStation=北京南, endStation=宁波, startRegion=北京, endRegion=宁波, saleTime=Mon May 15 14:30:00 CST 2023, saleStatus=0, departureTime=Thu Jun 01 09:56:00 CST 2023, arrivalTime=Thu Jun 01 15:14:00 CST 2023)
         String trainStationStopoverDetailStr = distributedCache.safeGet(
                 TRAIN_STATION_STOPOVER_DETAIL + requestParam.getTrainId(),
                 String.class,
                 () -> {
+                    //SELECT departure FROM train_station WHERE train_id = [requestParam.getTrainId()];获取的是这辆车的所有经过站
                     LambdaQueryWrapper<TrainStationDO> queryWrapper = Wrappers.lambdaQuery(TrainStationDO.class)
                             .eq(TrainStationDO::getTrainId, requestParam.getTrainId())
                             .select(TrainStationDO::getDeparture);
@@ -95,6 +98,7 @@ public class TrainPurchaseTicketParamVerifyChainHandler implements TrainPurchase
                 Index12306Constant.ADVANCE_TICKET_DAY,
                 TimeUnit.DAYS
         );
+        //trainStationStopoverDetailStr:[{"departure":"北京南"},{"departure":"济南西"},{"departure":"南京南"},{"departure":"杭州东"},{"departure":"宁波"}]
         List<TrainStationDO> trainDOList = JSON.parseArray(trainStationStopoverDetailStr, TrainStationDO.class);
         boolean validateStation = validateStation(
                 trainDOList.stream().map(TrainStationDO::getDeparture).toList(),
