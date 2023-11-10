@@ -70,6 +70,7 @@ public class SeatMarginCacheLoader {
             StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
             Object quantityObj = stringRedisTemplate.opsForHash().get(TRAIN_STATION_REMAINING_TICKET + keySuffix, seatType);
             if (CacheUtil.isNullOrBlank(quantityObj)) {
+                //如果缓存中没有，则获取到这辆车（通过id获取）的各个数据
                 TrainDO trainDO = distributedCache.safeGet(
                         TRAIN_INFO + trainId,
                         TrainDO.class,
@@ -77,6 +78,7 @@ public class SeatMarginCacheLoader {
                         ADVANCE_TICKET_DAY,
                         TimeUnit.DAYS
                 );
+                //计算列车站点路线关系，获取开始站点和目的站点及中间站点信息
                 List<RouteDTO> routeDTOList = trainStationService.listTrainStationRoute(trainId, trainDO.getStartStation(), trainDO.getEndStation());
                 if (CollUtil.isNotEmpty(routeDTOList)) {
                     switch (trainDO.getTrainType()) {
@@ -84,10 +86,12 @@ public class SeatMarginCacheLoader {
                         case 0 -> {
                             for (RouteDTO each : routeDTOList) {
                                 Map<String, String> trainStationRemainingTicket = new LinkedHashMap<>();
+                                //selectSeatMargin：通过查数据库来根据对应参数获取座位的状态等信息
                                 trainStationRemainingTicket.put("0", selectSeatMargin(trainId, 0, each.getStartStation(), each.getEndStation()));
                                 trainStationRemainingTicket.put("1", selectSeatMargin(trainId, 1, each.getStartStation(), each.getEndStation()));
                                 trainStationRemainingTicket.put("2", selectSeatMargin(trainId, 2, each.getStartStation(), each.getEndStation()));
                                 String actualKeySuffix = CacheUtil.buildKey(trainId, each.getStartStation(), each.getEndStation());
+                                //将获取到的信息存到map中，map的key为一个标志字符串，值为另一个map，这里为对应的这辆车的对应出发站到目的地（路线遍历）的商务座（0）、一等座（1）、二等座（2）的状态信息
                                 trainStationRemainingTicketMaps.put(TRAIN_STATION_REMAINING_TICKET + actualKeySuffix, trainStationRemainingTicket);
                             }
                         }

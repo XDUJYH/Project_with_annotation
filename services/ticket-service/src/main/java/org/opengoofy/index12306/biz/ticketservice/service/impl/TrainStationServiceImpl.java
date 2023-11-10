@@ -53,6 +53,7 @@ public class TrainStationServiceImpl implements TrainStationService {
 
     @Override
     public List<RouteDTO> listTrainStationRoute(String trainId, String departure, String arrival) {
+        //SELECT departure FROM train_station WHERE train_id = {trainId};获取到了这辆车的所有站
         LambdaQueryWrapper<TrainStationDO> queryWrapper = Wrappers.lambdaQuery(TrainStationDO.class)
                 .eq(TrainStationDO::getTrainId, trainId)
                 .select(TrainStationDO::getDeparture);

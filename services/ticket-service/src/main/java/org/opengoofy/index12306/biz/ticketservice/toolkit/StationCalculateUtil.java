@@ -45,6 +45,7 @@ public final class StationCalculateUtil {
         if (startIndex < 0 || endIndex < 0 || startIndex >= endIndex) {
             return routesToDeduct;
         }
+        //这做的是这张票从出发站到到达站之间影响的站，通过双重循环获得
         for (int i = startIndex; i < endIndex; i++) {
             for (int j = i + 1; j <= endIndex; j++) {
                 String currentStation = stations.get(i);

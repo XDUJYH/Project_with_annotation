@@ -39,6 +39,14 @@ public final class CacheUtil {
      * @return
      */
     public static String buildKey(String... keys) {
+        //输入示例：
+        //String key1 = "abc";
+        //String key2 = "123";
+        //String key3 = "xyz";
+        //String result = buildKey(key1, key2, key3);
+        //
+        //输出示例：
+        //result = "abc_123_xyz"
         Stream.of(keys).forEach(each -> Optional.ofNullable(Strings.emptyToNull(each)).orElseThrow(() -> new RuntimeException("构建缓存 key 不允许为空")));
         return Joiner.on(SPLICING_OPERATOR).join(keys);
     }
