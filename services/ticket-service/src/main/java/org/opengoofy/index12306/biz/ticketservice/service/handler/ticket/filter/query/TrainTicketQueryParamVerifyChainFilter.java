@@ -73,7 +73,7 @@ public class TrainTicketQueryParamVerifyChainFilter implements TrainTicketQueryC
         if (emptyCount == 0L) {
             return;
         }
-        //这里可能有误，文档里写的是！distributedCache.hasKey(QUERY_ALL_REGION_LIST)
+        //这里可能有误，文档里写的是！distributedCache.hasKey(QUERY_ALL_REGION_LIST),不过好像是合理的这里，因为若出发点和目的地都为空，如果缓存有东西却没查到则确实不存在，所以CACHE_DATA_ISNULL_AND_LOAD_FLAG代表的是缓存是否加载，没加载的话那肯定两个都为空啊。而一个存在一个不存在说明缓存肯定存在，所以可以直接下结论抛出异常
         if (emptyCount == 1L || (emptyCount == 2L && CACHE_DATA_ISNULL_AND_LOAD_FLAG && distributedCache.hasKey(QUERY_ALL_REGION_LIST))) {
             throw new ClientException("出发地或目的地不存在");
         }
@@ -85,14 +85,18 @@ public class TrainTicketQueryParamVerifyChainFilter implements TrainTicketQueryC
                         QUERY_ALL_REGION_LIST,
                         ListUtil.toList(requestParam.getFromStation(), requestParam.getToStation())
                 );
+                //这里统计的是非空数目！
                 emptyCount = actualExistList.stream().filter(Objects::nonNull).count();
                 if (emptyCount != 2L) {
                     throw new ClientException("出发地或目的地不存在");
                 }
                 return;
             }
+            //获取所有地区
             List<RegionDO> regionDOList = regionMapper.selectList(Wrappers.emptyWrapper());
+            //获取所有车站
             List<StationDO> stationDOList = stationMapper.selectList(Wrappers.emptyWrapper());
+            //存取对应的code和名字的键值对
             HashMap<Object, Object> regionValueMap = Maps.newHashMap();
             for (RegionDO each : regionDOList) {
                 regionValueMap.put(each.getCode(), each.getName());
@@ -100,7 +104,9 @@ public class TrainTicketQueryParamVerifyChainFilter implements TrainTicketQueryC
             for (StationDO each : stationDOList) {
                 regionValueMap.put(each.getCode(), each.getName());
             }
+            //将所有的地区和车站放入缓存中
             hashOperations.putAll(QUERY_ALL_REGION_LIST, regionValueMap);
+            //将缓存已加载标示为true
             CACHE_DATA_ISNULL_AND_LOAD_FLAG = true;
             emptyCount = regionValueMap.keySet().stream()
                     .filter(each -> StrUtil.equalsAny(each.toString(), requestParam.getFromStation(), requestParam.getToStation()))
