@@ -383,6 +383,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
         purchaseTicketAbstractChainContext.handler(TicketChainMarkEnum.TRAIN_PURCHASE_TICKET_FILTER.name(), requestParam);
         // v1 版本购票存在 4 个较为严重的问题，v2 版本相比较 v1 版本更具有业务特点以及性能，整体提升较大
         // 写了详细的 v2 版本购票升级指南，欢迎查阅 https://nageoffer.com/12306/question
+        //这里获取的是-xdujyhlaptopindex12306-ticket-service:lock:purchase_tickets_1_1类似的字符串（以V2版本为例子）
         String lockKey = environment.resolvePlaceholders(String.format(LOCK_PURCHASE_TICKETS, requestParam.getTrainId()));
         RLock lock = redissonClient.getLock(lockKey);
         lock.lock();
@@ -413,6 +414,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
                 .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
         seatTypeMap.forEach((searType, count) -> {
             String lockKey = environment.resolvePlaceholders(String.format(LOCK_PURCHASE_TICKETS_V2, requestParam.getTrainId(), searType));
+            //这里获取的是-xdujyhlaptopindex12306-ticket-service:lock:purchase_tickets_1_1类似的字符串
             ReentrantLock localLock = localLockMap.getIfPresent(lockKey);
             if (localLock == null) {
                 synchronized (TicketService.class) {
@@ -452,6 +454,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
         List<TicketOrderDetailRespDTO> ticketOrderDetailResults = new ArrayList<>();
         String trainId = requestParam.getTrainId();
         // 节假日高并发购票Redis能扛得住么？详情查看：https://nageoffer.com/12306/question
+        //根据id获得列车信息
         TrainDO trainDO = distributedCache.safeGet(
                 TRAIN_INFO + trainId,
                 TrainDO.class,
