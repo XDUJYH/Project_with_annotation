@@ -67,6 +67,7 @@ public final class TrainSeatTypeSelector {
 
     public List<TrainPurchaseTicketRespDTO> select(Integer trainType, PurchaseTicketReqDTO requestParam) {
         List<PurchaseTicketPassengerDetailDTO> passengerDetails = requestParam.getPassengers();
+        //根据座位类型将乘车人分组
         Map<Integer, List<PurchaseTicketPassengerDetailDTO>> seatTypeMap = passengerDetails.stream()
                 .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
         List<TrainPurchaseTicketRespDTO> actualResult = new CopyOnWriteArrayList<>();
