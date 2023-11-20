@@ -67,7 +67,7 @@ public final class TrainSeatTypeSelector {
 
     public List<TrainPurchaseTicketRespDTO> select(Integer trainType, PurchaseTicketReqDTO requestParam) {
         List<PurchaseTicketPassengerDetailDTO> passengerDetails = requestParam.getPassengers();
-        //根据座位类型将乘车人分组
+        //根据座位类型将乘车人分组,.collect(Collectors.groupingBy(...))，它的作用是将流中的元素按照指定的条件进行分组。具体来说，Collectors.groupingBy(...) 是一个分类收集器，它会根据提供的分类函数将流中的元素分组。
         Map<Integer, List<PurchaseTicketPassengerDetailDTO>> seatTypeMap = passengerDetails.stream()
                 .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
         List<TrainPurchaseTicketRespDTO> actualResult = new CopyOnWriteArrayList<>();
