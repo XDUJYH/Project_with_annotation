@@ -69,7 +69,9 @@ public class TrainFirstClassPurchaseTicketHandler extends AbstractTrainPurchaseT
         String departure = requestParam.getRequestParam().getDeparture();
         String arrival = requestParam.getRequestParam().getArrival();
         List<PurchaseTicketPassengerDetailDTO> passengerSeatDetails = requestParam.getPassengerSeatDetails();
+        //获得这辆车的可分配座位的车厢集合(查询列车有余票的车厢号集合)
         List<String> trainCarriageList = seatService.listUsableCarriageNumber(trainId, requestParam.getSeatType(), departure, arrival);
+        //获取列车车厢余票集合
         List<Integer> trainStationCarriageRemainingTicket = seatService.listSeatRemainingTicket(trainId, departure, arrival, trainCarriageList);
         int remainingTicketSum = trainStationCarriageRemainingTicket.stream().mapToInt(Integer::intValue).sum();
         if (remainingTicketSum < passengerSeatDetails.size()) {

@@ -69,7 +69,9 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
         String departure = requestParam.getRequestParam().getDeparture();
         String arrival = requestParam.getRequestParam().getArrival();
         List<PurchaseTicketPassengerDetailDTO> passengerSeatDetails = requestParam.getPassengerSeatDetails();
+        //查询列车有余票的车厢号集合
         List<String> trainCarriageList = seatService.listUsableCarriageNumber(trainId, requestParam.getSeatType(), departure, arrival);
+        //获取列车车厢余票集合
         List<Integer> trainStationCarriageRemainingTicket = seatService.listSeatRemainingTicket(trainId, departure, arrival, trainCarriageList);
         int remainingTicketSum = trainStationCarriageRemainingTicket.stream().mapToInt(Integer::intValue).sum();
         if (remainingTicketSum < passengerSeatDetails.size()) {
@@ -89,9 +91,11 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
     }
 
     private List<Pair<Integer, Integer>> calcChooseSeatLevelPairList(int[][] actualSeats, List<String> chooseSeatList) {
+        //获取第一个选定的位置
         String firstChooseSeat = chooseSeatList.get(0);
         int firstSeatX = Integer.parseInt(firstChooseSeat.substring(1));
         int firstSeatY = SEAT_Y_INT.get(firstChooseSeat.charAt(0));
+        //如D0这个座位号，处理后firstSeatX=0，firstSeatY=3,因此X对应着第一排还是第二排，Y对应着ABCDF这五个座位选了哪个
         List<Pair<Integer, Integer>> chooseSeatLevelPairList = new ArrayList<>();
         chooseSeatLevelPairList.add(new Pair<>(firstSeatX, firstSeatY));
         int minLevelX = 0;
@@ -102,15 +106,20 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
             minLevelX = Math.min(minLevelX, chooseSeatX - firstSeatX);
             chooseSeatLevelPairList.add(new Pair<>(chooseSeatX - firstSeatX, chooseSeatY - firstSeatY));
         }
+        //分析：上面这个循环将每个选择的位置与第一个选择的位置进行了比较，并将比较后的结果存入了chooseSeatLevelPairList，代表着相对第一个位置的相对位置
+        //int i = Math.abs(minLevelX)，目前测试的好像都是从0开始
         for (int i = Math.abs(minLevelX); i < 18; i++) {
             List<Pair<Integer, Integer>> sureSeatList = new ArrayList<>();
+            //判断actualSeats[i][firstSeatY]是否可以使用
             if (actualSeats[i][firstSeatY] == 0) {
                 sureSeatList.add(new Pair<>(i, firstSeatY));
+                //先确定第一个座位的位置，然后依次遍历以后的位置是否存在满足条件的
                 for (int j = 1; j < chooseSeatList.size(); j++) {
                     Pair<Integer, Integer> pair = chooseSeatLevelPairList.get(j);
                     int chooseSeatX = pair.getKey();
                     int chooseSeatY = pair.getValue();
                     int x = i + chooseSeatX;
+                    //如果x超过18排则无法在这节车厢安排座位
                     if (x >= 18) {
                         return Collections.emptyList();
                     }
@@ -130,30 +139,40 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
 
     private Pair<List<TrainPurchaseTicketRespDTO>, Boolean> findMatchSeats(SelectSeatDTO requestParam, List<String> trainCarriageList, List<Integer> trainStationCarriageRemainingTicket) {
         TrainSeatBaseDTO trainSeatBaseDTO = buildTrainSeatBaseDTO(requestParam);
+        //创建一个ArrayList实例并指定其初始容量。
         List<TrainPurchaseTicketRespDTO> actualResult = Lists.newArrayListWithCapacity(trainSeatBaseDTO.getPassengerSeatDetails().size());
         HashMap<String, List<Pair<Integer, Integer>>> carriagesSeatMap = new HashMap<>(16);
         int passengersNumber = trainSeatBaseDTO.getPassengerSeatDetails().size();
+        //trainStationCarriageRemainingTicket代表每个车厢的余票数，它的长度就是含有余票的车厢数
         for (int i = 0; i < trainStationCarriageRemainingTicket.size(); i++) {
+            //获取车厢号
             String carriagesNumber = trainCarriageList.get(i);
+            //获取可用的座位号，并存到list中，如'01A'、'01B'这样的可用座位号
             List<String> listAvailableSeat = seatService.listAvailableSeat(trainSeatBaseDTO.getTrainId(), carriagesNumber, requestParam.getSeatType(), trainSeatBaseDTO.getDeparture(), trainSeatBaseDTO.getArrival());
+            //这个数组代表这个车厢所有的座位
             int[][] actualSeats = new int[18][5];
             List<Pair<Integer, Integer>> carriagesVacantSeat = new ArrayList<>();
             for (int j = 1; j < 19; j++) {
                 for (int k = 1; k < 6; k++) {
                     if (j <= 9) {
+                        //逻辑是遍历这个车厢的所有座位，然后挨个判断这个作为是否被包含在listAvailableSeat中，包含则为actualSeats这个位置赋值为0，否则为1
                         actualSeats[j - 1][k - 1] = listAvailableSeat.contains("0" + j + SeatNumberUtil.convert(2, k)) ? 0 : 1;
                     } else {
                         actualSeats[j - 1][k - 1] = listAvailableSeat.contains("" + j + SeatNumberUtil.convert(2, k)) ? 0 : 1;
                     }
                     if (actualSeats[j - 1][k - 1] == 0) {
+                        //为0说明可用，将其存入
                         carriagesVacantSeat.add(new Pair<>(j - 1, k - 1));
                     }
                 }
             }
+            //经过以上步骤后，carriagesVacantSeat存入了可用的座位坐标
             List<String> selectSeats = new ArrayList<>(passengersNumber);
+            //calcChooseSeatLevelPairList作用是取得满足选择座位条件的结果
             List<Pair<Integer, Integer>> sureSeatList = calcChooseSeatLevelPairList(actualSeats, trainSeatBaseDTO.getChooseSeatList());
             if (CollUtil.isNotEmpty(sureSeatList) && carriagesVacantSeat.size() >= passengersNumber) {
                 List<Pair<Integer, Integer>> vacantSeatList = new ArrayList<>();
+                //不相等的情况是可以存在的，比如3个人买票只选了两个座位
                 if (sureSeatList.size() != passengersNumber) {
                     for (int i1 = 0; i1 < sureSeatList.size(); i1++) {
                         Pair<Integer, Integer> pair = sureSeatList.get(i1);
@@ -166,9 +185,13 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                             }
                         }
                     }
+                    //经过上面这个循环后vacantSeatList存入了可用的座位对
+                    //获得未选位置的人数
                     int needSeatSize = passengersNumber - sureSeatList.size();
+                    //直接将可用的前needSeatSize放到sureSeatList中
                     sureSeatList.addAll(vacantSeatList.subList(0, needSeatSize));
                 }
+                //TODO waiting to read
                 for (Pair<Integer, Integer> each : sureSeatList) {
                     if (each.getKey() <= 8) {
                         selectSeats.add("0" + (each.getKey() + 1) + SeatNumberUtil.convert(2, each.getValue() + 1));

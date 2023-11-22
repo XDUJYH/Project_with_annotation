@@ -56,6 +56,14 @@ public class SeatServiceImpl extends ServiceImpl<SeatMapper, SeatDO> implements 
 
     @Override
     public List<String> listAvailableSeat(String trainId, String carriageNumber, Integer seatType, String departure, String arrival) {
+        //SELECT seat_number
+        //FROM seat
+        //WHERE train_id = ?
+        //  AND carriage_number = ?
+        //  AND seat_type = ?
+        //  AND start_station = ?
+        //  AND end_station = ?
+        //  AND seat_status = ?
         LambdaQueryWrapper<SeatDO> queryWrapper = Wrappers.lambdaQuery(SeatDO.class)
                 .eq(SeatDO::getTrainId, trainId)
                 .eq(SeatDO::getCarriageNumber, carriageNumber)
@@ -89,6 +97,14 @@ public class SeatServiceImpl extends ServiceImpl<SeatMapper, SeatDO> implements 
 
     @Override
     public List<String> listUsableCarriageNumber(String trainId, Integer carriageType, String departure, String arrival) {
+        //SELECT carriage_number
+        //FROM seat
+        //WHERE train_id = ?
+        //  AND seat_type = ?
+        //  AND start_station = ?
+        //  AND end_station = ?
+        //  AND seat_status = ?
+        //GROUP BY carriage_number
         LambdaQueryWrapper<SeatDO> queryWrapper = Wrappers.lambdaQuery(SeatDO.class)
                 .eq(SeatDO::getTrainId, trainId)
                 .eq(SeatDO::getSeatType, carriageType)
