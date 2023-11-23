@@ -70,6 +70,7 @@ public final class TrainSeatTypeSelector {
         //根据座位类型将乘车人分组,.collect(Collectors.groupingBy(...))，它的作用是将流中的元素按照指定的条件进行分组。具体来说，Collectors.groupingBy(...) 是一个分类收集器，它会根据提供的分类函数将流中的元素分组。
         Map<Integer, List<PurchaseTicketPassengerDetailDTO>> seatTypeMap = passengerDetails.stream()
                 .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
+        //CopyOnWriteArrayList 是 Java 中并发编程领域中的一种线程安全的列表实现。它是 ArrayList 的线程安全版本，
         List<TrainPurchaseTicketRespDTO> actualResult = new CopyOnWriteArrayList<>();
         if (seatTypeMap.size() > 1) {
             List<Future<List<TrainPurchaseTicketRespDTO>>> futureResults = new ArrayList<>();
@@ -102,6 +103,7 @@ public final class TrainSeatTypeSelector {
         Result<List<PassengerRespDTO>> passengerRemoteResult;
         List<PassengerRespDTO> passengerRemoteResultList;
         try {
+            // TODO wait to read details
             passengerRemoteResult = userRemoteService.listPassengerQueryByIds(UserContext.getUsername(), passengerIds);
             if (!passengerRemoteResult.isSuccess() || CollUtil.isEmpty(passengerRemoteResultList = passengerRemoteResult.getData())) {
                 throw new RemoteException("用户服务远程调用查询乘车人相信信息错误");

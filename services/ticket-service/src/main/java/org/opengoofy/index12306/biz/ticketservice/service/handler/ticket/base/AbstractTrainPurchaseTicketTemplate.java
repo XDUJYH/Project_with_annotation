@@ -73,6 +73,7 @@ public abstract class AbstractTrainPurchaseTicketTemplate implements IPurchaseTi
             String departure = requestParam.getRequestParam().getDeparture();
             String arrival = requestParam.getRequestParam().getArrival();
             StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
+            //获取购票的所有经过站
             List<RouteDTO> routeDTOList = trainStationService.listTakeoutTrainStationRoute(trainId, departure, arrival);
             routeDTOList.forEach(each -> {
                 String keySuffix = StrUtil.join("_", trainId, each.getStartStation(), each.getEndStation());

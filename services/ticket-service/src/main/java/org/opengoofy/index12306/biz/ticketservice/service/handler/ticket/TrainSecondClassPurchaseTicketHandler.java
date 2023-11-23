@@ -81,8 +81,10 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
             if (CollUtil.isNotEmpty(requestParam.getRequestParam().getChooseSeats())) {
                 return findMatchSeats(requestParam, trainCarriageList, trainStationCarriageRemainingTicket).getKey();
             }
+            //如果没有选择座位，则进入这个方法
             return selectSeats(requestParam, trainCarriageList, trainStationCarriageRemainingTicket);
         } else {
+            //如果乘车人大于等于6个
             if (CollUtil.isNotEmpty(requestParam.getRequestParam().getChooseSeats())) {
                 return findMatchSeats(requestParam, trainCarriageList, trainStationCarriageRemainingTicket).getKey();
             }
@@ -170,6 +172,7 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
             List<String> selectSeats = new ArrayList<>(passengersNumber);
             //calcChooseSeatLevelPairList作用是取得满足选择座位条件的结果
             List<Pair<Integer, Integer>> sureSeatList = calcChooseSeatLevelPairList(actualSeats, trainSeatBaseDTO.getChooseSeatList());
+            //sureSeatList不会空则说明指定位置的座位可以满足，那么可以在下面这个if中进行结果返回
             if (CollUtil.isNotEmpty(sureSeatList) && carriagesVacantSeat.size() >= passengersNumber) {
                 List<Pair<Integer, Integer>> vacantSeatList = new ArrayList<>();
                 //不相等的情况是可以存在的，比如3个人买票只选了两个座位
@@ -191,7 +194,7 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                     //直接将可用的前needSeatSize放到sureSeatList中
                     sureSeatList.addAll(vacantSeatList.subList(0, needSeatSize));
                 }
-                //TODO waiting to read
+                //下面这个循环相当于将座位从数字编号还原成带字母的座位号，如Pair [key=0, value=0]Pair [key=0, value=1]Pair [key=0, value=2]转换为'01A','01B','01C'
                 for (Pair<Integer, Integer> each : sureSeatList) {
                     if (each.getKey() <= 8) {
                         selectSeats.add("0" + (each.getKey() + 1) + SeatNumberUtil.convert(2, each.getValue() + 1));
@@ -199,6 +202,7 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                         selectSeats.add("" + (each.getKey() + 1) + SeatNumberUtil.convert(2, each.getValue() + 1));
                     }
                 }
+                //AtomicInteger 是 Java 中 java.util.concurrent.atomic 包下的一个类，它提供了一种原子性操作整数的方式。
                 AtomicInteger countNum = new AtomicInteger(0);
                 for (String selectSeat : selectSeats) {
                     TrainPurchaseTicketRespDTO result = new TrainPurchaseTicketRespDTO();
@@ -211,16 +215,24 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                 }
                 return new Pair<>(actualResult, Boolean.TRUE);
             } else {
+                //if (CollUtil.isNotEmpty(sureSeatList) && carriagesVacantSeat.size() >= passengersNumber)条件不满足则会进入这个分支，可以看出不满足的话说明两种情况：
+                // 1.sureSeatList为空，说明这节车厢无法满足选定位置的要求
+                // 2.carriagesVacantSeat.size() < passengersNumber说明这节车厢不满足安排所有人座位的容量
                 if (CollUtil.isNotEmpty(carriagesVacantSeat)) {
+                    //carriagesVacantSeat不为空将其放入一个map中
                     carriagesSeatMap.put(carriagesNumber, carriagesVacantSeat);
+                    //判断是否是最后一节车厢
                     if (i == trainStationCarriageRemainingTicket.size() - 1) {
                         Pair<String, List<Pair<Integer, Integer>>> findSureCarriageSeat = null;
+                        //循环carriagesSeatMap，也就是将车厢剩余座位量大于买票人数的车厢保存到findSureCarriageSeat中
                         for (Map.Entry<String, List<Pair<Integer, Integer>>> entry : carriagesSeatMap.entrySet()) {
                             if (entry.getValue().size() >= passengersNumber) {
                                 findSureCarriageSeat = new Pair<>(entry.getKey(), entry.getValue().subList(0, passengersNumber));
                                 break;
                             }
                         }
+                        //如果不为空则说明有车厢余票大于买票人数
+                        //注：findSureCarriageSeat的key存的是车厢编号，value存到是车厢余票量
                         if (findSureCarriageSeat != null) {
                             for (Pair<Integer, Integer> each : findSureCarriageSeat.getValue()) {
                                 if (each.getKey() <= 8) {
@@ -239,10 +251,13 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                                 result.setPassengerId(currentTicketPassenger.getPassengerId());
                                 actualResult.add(result);
                             }
+                            //返回，注这个返回没有满足选定座位，而是车厢余票大于乘车人数的直接分配，无法满足选定座位了
                             return new Pair<>(actualResult, Boolean.TRUE);
                         } else {
+                            //对应if (findSureCarriageSeat != null)分支，进入这个分支说明findSureCarriageSeat为空，也就是没有一节车厢能够满足存入所有乘车人，只能将乘车人分开车厢分配座位了
                             int sureSeatListSize = 0;
                             AtomicInteger countNum = new AtomicInteger(0);
+                            //carriagesSeatMap的key是车厢号，value是List<Pair<Integer, Integer>>类型的座位号（通过两个数存座位的坐标）
                             for (Map.Entry<String, List<Pair<Integer, Integer>>> entry : carriagesSeatMap.entrySet()) {
                                 if (sureSeatListSize < passengersNumber) {
                                     if (sureSeatListSize + entry.getValue().size() < passengersNumber) {
@@ -265,6 +280,8 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                                             actualResult.add(result);
                                         }
                                     } else {
+                                        //这是if (sureSeatListSize + entry.getValue().size() < passengersNumber)的分支，进入代表sureSeatListSize + entry.getValue().size()大于乘车人数了，可以进行一些处理后返回了
+                                        //needSeatSize = passengersNumber - sureSeatListSize
                                         int needSeatSize = entry.getValue().size() - (sureSeatListSize + entry.getValue().size() - passengersNumber);
                                         sureSeatListSize = sureSeatListSize + needSeatSize;
                                         if (sureSeatListSize >= passengersNumber) {
@@ -309,6 +326,7 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
         Map<String, int[][]> actualSeatsMap = new HashMap<>();
         Map<String, int[][]> carriagesNumberSeatsMap = new HashMap<>();
         String carriagesNumber;
+        //trainStationCarriageRemainingTicket是含有余票的车厢数
         for (int i = 0; i < trainStationCarriageRemainingTicket.size(); i++) {
             carriagesNumber = trainCarriageList.get(i);
             List<String> listAvailableSeat = seatService.listAvailableSeat(trainId, carriagesNumber, requestParam.getSeatType(), departure, arrival);
@@ -323,11 +341,13 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
                     }
                 }
             }
+            //经过处理后actualSeats是可用的座位标志数组
             int[][] select = SeatSelection.adjacent(passengerSeatDetails.size(), actualSeats);
             if (select != null) {
                 carriagesNumberSeatsMap.put(carriagesNumber, select);
                 break;
             }
+            //如果select==null才会执行以下语句
             int demotionStockNum = 0;
             for (int[] actualSeat : actualSeats) {
                 for (int i1 : actualSeat) {
@@ -422,6 +442,7 @@ public class TrainSecondClassPurchaseTicketHandler extends AbstractTrainPurchase
             }
             int[][] actualSeatsTranscript = deepCopy(actualSeats);
             List<int[][]> actualSelects = new ArrayList<>();
+            //ListUtil.split(passengerSeatDetails, 3);如将6个乘车人分成了两组，每组3个人
             List<List<PurchaseTicketPassengerDetailDTO>> splitPassengerSeatDetails = ListUtil.split(passengerSeatDetails, 3);
             for (List<PurchaseTicketPassengerDetailDTO> each : splitPassengerSeatDetails) {
                 int[][] select = SeatSelection.adjacent(each.size(), actualSeatsTranscript);
