@@ -41,6 +41,9 @@ import java.util.UUID;
 @Component
 public class DelayCloseOrderSendProduce extends AbstractCommonSendProduceTemplate<DelayCloseOrderEvent> {
 
+
+    //ConfigurableEnvironment 是 Spring Framework 提供的接口，表示可配置的环境。它是 Environment 接口的子接口，提供了一些额外的配置能力。
+    //在 Spring 中，Environment 负责提供应用程序运行时的配置信息。ConfigurableEnvironment 接口则进一步扩展了这个概念，允许应用程序在运行时对环境进行一些配置，例如动态地添加、修改或删除属性。
     private final ConfigurableEnvironment environment;
 
     public DelayCloseOrderSendProduce(@Autowired RocketMQTemplate rocketMQTemplate, @Autowired ConfigurableEnvironment environment) {
@@ -49,6 +52,12 @@ public class DelayCloseOrderSendProduce extends AbstractCommonSendProduceTemplat
     }
 
     @Override
+    /**
+     * 构建消息发送事件基础扩充属性实体
+     *
+     * @param messageSendEvent 消息发送事件
+     * @return 扩充属性实体
+     */
     protected BaseSendExtendDTO buildBaseSendExtendParam(DelayCloseOrderEvent messageSendEvent) {
         return BaseSendExtendDTO.builder()
                 .eventName("延迟关闭订单")
@@ -63,7 +72,16 @@ public class DelayCloseOrderSendProduce extends AbstractCommonSendProduceTemplat
 
     @Override
     protected Message<?> buildMessage(DelayCloseOrderEvent messageSendEvent, BaseSendExtendDTO requestParam) {
+        //生成消息的唯一标识 keys：
+        //如果 requestParam.getKeys() 不为空，就使用该值作为消息的唯一标识。
+        //如果 requestParam.getKeys() 为空，就生成一个新的 UUID 作为消息的唯一标识。
         String keys = StrUtil.isEmpty(requestParam.getKeys()) ? UUID.randomUUID().toString() : requestParam.getKeys();
+        //使用 MessageBuilder 创建消息。
+        //将前面封装的消息体设置为消息的负载（payload）。
+        //设置消息的属性，包括唯一标识 PROPERTY_KEYS、消息标签 PROPERTY_TAGS。
+        //withPayload 是 Spring Cloud Stream 中 MessageBuilder 提供的方法之一，用于设置消息的负载（payload）。负载是消息的实际数据内容，它可以是任何 Java 对象。
+        //
+        //具体来说，withPayload 方法的作用是将给定的对象设置为消息的负载。总体而言，withPayload 方法用于将一个对象作为消息的负载，以便后续消息的处理者可以提取并处理这个负载中的数据。
         return MessageBuilder
                 .withPayload(new MessageWrapper(requestParam.getKeys(), messageSendEvent))
                 .setHeader(MessageConst.PROPERTY_KEYS, keys)
