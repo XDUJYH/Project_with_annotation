@@ -103,6 +103,11 @@ public class OrderItemServiceImpl extends ServiceImpl<OrderItemMapper, OrderItem
     }
 
     @Override
+    /**
+     * 根据子订单记录id查询车票子订单详情
+     *
+     * @param requestParam 请求参数
+     */
     public List<TicketOrderPassengerDetailRespDTO> queryTicketItemOrderById(TicketOrderItemQueryReqDTO requestParam) {
         LambdaQueryWrapper<OrderItemDO> queryWrapper = Wrappers.lambdaQuery(OrderItemDO.class)
                 .eq(OrderItemDO::getOrderSn, requestParam.getOrderSn())

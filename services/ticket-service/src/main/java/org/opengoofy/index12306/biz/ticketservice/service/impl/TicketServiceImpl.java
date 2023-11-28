@@ -394,6 +394,9 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
         }
     }
 
+    //使用 Caffeine 缓存库创建一个本地缓存（Local Cache）,使用 expireAfterWrite 方法设置缓存项在写入一天（1天）后过期。这意味着如果某个缓存项在一天内没有被写入，它将被从缓存中移除。声明一个名为 localLockMap 的成员变量，其类型是 Cache<String, ReentrantLock>。这表示这个缓存将使用 String 作为键，ReentrantLock 作为值。每个键（String类型）都映射到一个相应的 ReentrantLock 实例。
+    //
+    //总体而言，这段代码创建了一个基于 Caffeine 的本地缓存，用于缓存字符串键和相应的 ReentrantLock 对象。缓存项将在写入一天后过期，这种模式通常用于实现一些基于时间的缓存策略，确保不使用的数据会在一定时间内被自动清理。在这个特定的情境下，使用缓存来存储锁对象，可能是为了避免重复创建锁，提高并发性。
     private final Cache<String, ReentrantLock> localLockMap = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.DAYS)
             .build();
@@ -408,11 +411,15 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
         }
         // v1 版本购票存在 4 个较为严重的问题，v2 版本相比较 v1 版本更具有业务特点以及性能，整体提升较大
         // 写了详细的 v2 版本购票升级指南，欢迎查阅 https://nageoffer.com/12306/question
+        // 存储本次请求需要获取的本地锁的集合
         List<ReentrantLock> localLockList = new ArrayList<>();
+        // 存储本次请求需要获取的分布式锁的集合
         List<RLock> distributedLockList = new ArrayList<>();
+        // 按照座位类型进行分组
         Map<Integer, List<PurchaseTicketPassengerDetailDTO>> seatTypeMap = requestParam.getPassengers().stream()
                 .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
         seatTypeMap.forEach((searType, count) -> {
+            // 构建锁 Key，相比较上个版本，增加了座位类型
             String lockKey = environment.resolvePlaceholders(String.format(LOCK_PURCHASE_TICKETS_V2, requestParam.getTrainId(), searType));
             //这里获取的是-xdujyhlaptopindex12306-ticket-service:lock:purchase_tickets_1_1类似的字符串
             ReentrantLock localLock = localLockMap.getIfPresent(lockKey);
@@ -424,21 +431,27 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
                     }
                 }
             }
+            // 添加到本地锁集合
             localLockList.add(localLock);
             RLock distributedLock = redissonClient.getFairLock(lockKey);
+            // 添加到分布式锁集合
             distributedLockList.add(distributedLock);
         });
         try {
+            // 循环请求本地锁
             localLockList.forEach(ReentrantLock::lock);
+            // 循环请求分布式锁
             distributedLockList.forEach(RLock::lock);
             return ticketService.executePurchaseTickets(requestParam);
         } finally {
+            // 释放本地锁
             localLockList.forEach(localLock -> {
                 try {
                     localLock.unlock();
                 } catch (Throwable ignored) {
                 }
             });
+            // 释放分布式锁
             distributedLockList.forEach(distributedLock -> {
                 try {
                     distributedLock.unlock();

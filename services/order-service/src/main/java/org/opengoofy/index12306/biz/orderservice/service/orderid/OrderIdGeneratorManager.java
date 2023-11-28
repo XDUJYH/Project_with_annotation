@@ -47,6 +47,7 @@ public final class OrderIdGeneratorManager implements InitializingBean {
      * @return 订单 ID
      */
     public static String generateId(long userId) {
+        //DISTRIBUTED_ID_GENERATOR.generateId()生成的是一个整形数字，String.valueOf(userId % 1000000)生成的是字符串，实现了将用户id的后6位拼接到生成id上
         return DISTRIBUTED_ID_GENERATOR.generateId() + String.valueOf(userId % 1000000);
     }
 

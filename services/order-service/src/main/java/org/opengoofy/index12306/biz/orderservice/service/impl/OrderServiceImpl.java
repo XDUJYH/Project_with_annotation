@@ -89,6 +89,12 @@ public class OrderServiceImpl implements OrderService {
     private final UserRemoteService userRemoteService;
 
     @Override
+    /**
+     * 跟据订单号查询车票订单
+     *
+     * @param orderSn 订单号
+     * @return 订单详情
+     */
     public TicketOrderDetailRespDTO queryTicketOrderByOrderSn(String orderSn) {
         LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
                 .eq(OrderDO::getOrderSn, orderSn);
@@ -102,6 +108,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    /**
+     * 跟据用户名分页查询车票订单
+     *
+     * @param requestParam 跟据用户 ID 分页查询对象
+     * @return 订单分页详情
+     */
     public PageResponse<TicketOrderDetailRespDTO> pageTicketOrder(TicketOrderPageQueryReqDTO requestParam) {
         LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
                 .eq(OrderDO::getUserId, requestParam.getUserId())
@@ -120,6 +132,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    /**
+     * 创建火车票订单
+     *
+     * @param requestParam 商品订单入参
+     * @return 订单号
+     */
     public String createTicketOrder(TicketOrderCreateReqDTO requestParam) {
         // 通过基因法将用户 ID 融入到订单号
         String orderSn = OrderIdGeneratorManager.generateId(requestParam.getUserId());
@@ -292,6 +310,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    /**
+     * 查询本人车票订单
+     *
+     * @param requestParam 请求参数
+     * @return 本人车票订单集合
+     */
     public PageResponse<TicketOrderDetailSelfRespDTO> pageSelfTicketOrder(TicketOrderSelfPageQueryReqDTO requestParam) {
         Result<UserQueryActualRespDTO> userActualResp = userRemoteService.queryActualUserByUsername(UserContext.getUsername());
         LambdaQueryWrapper<OrderItemPassengerDO> queryWrapper = Wrappers.lambdaQuery(OrderItemPassengerDO.class)
