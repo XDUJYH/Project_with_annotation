@@ -70,6 +70,13 @@ public class RefundServiceImpl implements RefundService {
     private final RefundResultCallbackOrderSendProduce refundResultCallbackOrderSendProduce;
 
     @Override
+    /**
+     * 公共退款接口
+     *
+     * @param requestParam 退款请求参数
+     * @return 退款返回详情
+     */
+    //TODO read detail
     @Transactional
     public RefundRespDTO commonRefund(RefundReqDTO requestParam) {
         RefundRespDTO refundRespDTO = null;

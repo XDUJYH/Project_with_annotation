@@ -115,6 +115,12 @@ public class PayServiceImpl implements PayService {
     }
 
     @Override
+    /**
+     * 跟据订单号查询支付单详情
+     *
+     * @param orderSn 订单号
+     * @return 支付单详情
+     */
     public PayInfoRespDTO getPayInfoByOrderSn(String orderSn) {
         LambdaQueryWrapper<PayDO> queryWrapper = Wrappers.lambdaQuery(PayDO.class)
                 .eq(PayDO::getOrderSn, orderSn);
@@ -123,6 +129,12 @@ public class PayServiceImpl implements PayService {
     }
 
     @Override
+    /**
+     * 跟据支付流水号查询支付单详情
+     *
+     * @param paySn 支付单流水号
+     * @return 支付单详情
+     */
     public PayInfoRespDTO getPayInfoByPaySn(String paySn) {
         LambdaQueryWrapper<PayDO> queryWrapper = Wrappers.lambdaQuery(PayDO.class)
                 .eq(PayDO::getPaySn, paySn);

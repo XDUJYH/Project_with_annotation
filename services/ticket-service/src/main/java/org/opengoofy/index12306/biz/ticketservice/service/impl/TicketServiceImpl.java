@@ -546,11 +546,22 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
     }
 
     @Override
+    /**
+     * 支付单详情查询
+     *
+     * @param orderSn 订单号
+     * @return 支付单详情
+     */
     public PayInfoRespDTO getPayInfo(String orderSn) {
         return payRemoteService.getPayInfo(orderSn).getData();
     }
 
     @Override
+    /**
+     * 取消车票订单
+     *
+     * @param requestParam 取消车票订单入参
+     */
     public void cancelTicketOrder(CancelTicketOrderReqDTO requestParam) {
         Result<Void> cancelOrderResult = ticketOrderRemoteService.cancelTicketOrder(requestParam);
         if (cancelOrderResult.isSuccess() && !StrUtil.equals(ticketAvailabilityCacheUpdateType, "binlog")) {
@@ -587,6 +598,12 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
     }
 
     @Override
+    /**
+     * 公共退款接口
+     *
+     * @param requestParam 退款请求参数
+     * @return 退款返回详情
+     */
     public RefundTicketRespDTO commonTicketRefund(RefundTicketReqDTO requestParam) {
         // 责任链模式，验证 1：参数必填
         refundReqDTOAbstractChainContext.handler(TicketChainMarkEnum.TRAIN_REFUND_TICKET_FILTER.name(), requestParam);
@@ -600,6 +617,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
             throw new ServiceException("车票子订单不存在");
         }
         RefundReqDTO refundReqDTO = new RefundReqDTO();
+        // 退款类型 0 部分退款 1 全部退款
         if (RefundTypeEnum.PARTIAL_REFUND.getType().equals(requestParam.getType())) {
             TicketOrderItemQueryReqDTO ticketOrderItemQueryReqDTO = new TicketOrderItemQueryReqDTO();
             ticketOrderItemQueryReqDTO.setOrderSn(requestParam.getOrderSn());

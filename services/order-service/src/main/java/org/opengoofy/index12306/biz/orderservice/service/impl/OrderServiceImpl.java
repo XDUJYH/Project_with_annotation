@@ -221,7 +221,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    /**
+     * 取消火车票订单
+     *
+     * @param requestParam 取消火车票订单入参
+     */
     public boolean cancelTickOrder(CancelTicketOrderReqDTO requestParam) {
+        //获取订单号
         String orderSn = requestParam.getOrderSn();
         LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
                 .eq(OrderDO::getOrderSn, orderSn);
