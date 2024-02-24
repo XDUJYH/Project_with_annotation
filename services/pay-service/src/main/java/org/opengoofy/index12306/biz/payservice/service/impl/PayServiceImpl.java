@@ -68,6 +68,12 @@ public class PayServiceImpl implements PayService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    /**
+     * 创建支付单
+     *
+     * @param requestParam 创建支付单实体
+     * @return 支付返回详情
+     */
     public PayRespDTO commonPay(PayRequest requestParam) {
         /**
          * {@link AliPayNativeHandler}

@@ -69,6 +69,7 @@ public final class DelayCloseOrderConsumer implements RocketMQListener<MessageWr
     private final DistributedCache distributedCache;
     private final TicketAvailabilityTokenBucket ticketAvailabilityTokenBucket;
 
+    //ticket.availability.cache-update.type:需要自己配置，具体细节见https://www.yuque.com/magestack/12306/glv5e0785b2d7oag#VI9Zi
     @Value("${ticket.availability.cache-update.type:}")
     private String ticketAvailabilityCacheUpdateType;
 
@@ -94,11 +95,21 @@ public final class DelayCloseOrderConsumer implements RocketMQListener<MessageWr
             String arrival = delayCloseOrderEvent.getArrival();
             List<TrainPurchaseTicketRespDTO> trainPurchaseTicketResults = delayCloseOrderEvent.getTrainPurchaseTicketResults();
             try {
+                //    /**
+                //     * 解锁选中以及沿途车票状态
+                //     *
+                //     * @param trainId                    列车 ID
+                //     * @param departure                  出发站
+                //     * @param arrival                    到达站
+                //     * @param trainPurchaseTicketResults 乘车人以及座位信息
+                //     */
+                // 看代码其实就是将座位状态置位可用状态
                 seatService.unlock(trainId, departure, arrival, trainPurchaseTicketResults);
             } catch (Throwable ex) {
                 log.error("[延迟关闭订单] 订单号：{} 回滚列车DB座位状态失败", orderSn, ex);
                 throw ex;
             }
+            //回滚redis里的余票以及令牌桶里的余票量
             try {
                 StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
                 Map<Integer, List<TrainPurchaseTicketRespDTO>> seatTypeMap = trainPurchaseTicketResults.stream()

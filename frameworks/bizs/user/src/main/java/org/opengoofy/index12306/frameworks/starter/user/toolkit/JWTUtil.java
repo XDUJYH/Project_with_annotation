@@ -59,10 +59,15 @@ public final class JWTUtil {
         customerUserMap.put(USER_NAME_KEY, userInfo.getUsername());
         customerUserMap.put(REAL_NAME_KEY, userInfo.getRealName());
         String jwtToken = Jwts.builder()
+                //SignatureAlgorithm.HS512签名算法，属于Header。SECRET秘钥，用于计算Signature
                 .signWith(SignatureAlgorithm.HS512, SECRET)
+                //iat（issued at time）：JWT 签发时间。注册声明，属于Payload
                 .setIssuedAt(new Date())
+                //iss（issuer）：JWT 签发方。注册声明，属于Payload
                 .setIssuer(ISS)
+                //sub（subject）：JWT 主题。注册声明，属于Payload
                 .setSubject(JSON.toJSONString(customerUserMap))
+                //exp（expiration time）：JWT 的过期时间。注册声明，属于Payload
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION * 1000))
                 .compact();
         return TOKEN_PREFIX + jwtToken;
