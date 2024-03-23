@@ -91,6 +91,9 @@ public final class StationCalculateUtil {
         List<String> stations = Arrays.asList("北京南", "济南西", "南京南", "杭州东", "宁波");
         String startStation = "北京南";
         String endStation = "南京南";
+        System.out.println("计算出发站和终点站需要扣减余票的站点（包含出发站和终点站）");
         StationCalculateUtil.takeoutStation(stations, startStation, endStation).forEach(System.out::println);
+        System.out.println("计算出发站和终点站中间的站点（包含出发站和终点站）");
+        StationCalculateUtil.throughStation(stations, "北京南", "宁波").forEach(System.out::println);
     }
 }

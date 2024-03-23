@@ -135,6 +135,7 @@ public class SeatMarginCacheLoader {
     }
 
     private String selectSeatMargin(String trainId, Integer type, String departure, String arrival) {
+        //通过查表，获得
         LambdaQueryWrapper<SeatDO> queryWrapper = Wrappers.lambdaQuery(SeatDO.class)
                 .eq(SeatDO::getTrainId, trainId)
                 .eq(SeatDO::getSeatType, type)

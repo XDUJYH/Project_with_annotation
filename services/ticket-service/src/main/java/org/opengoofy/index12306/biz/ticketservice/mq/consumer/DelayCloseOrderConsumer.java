@@ -56,6 +56,9 @@ import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKe
 @Slf4j
 @Component
 @RequiredArgsConstructor
+//topic: 指定消息监听器要订阅的主题（topic），即接收消息的主题。
+//selectorExpression: 消息选择表达式，用于过滤消息。只有匹配该表达式的消息会被该监听器接收处理。
+//consumerGroup: 指定消费者组（consumer group），用于标识一组消费者实例。同一个消费者组内的多个消费者实例共同消费同一个主题下的消息，实现负载均衡和高可用性。
 @RocketMQMessageListener(
         topic = TicketRocketMQConstant.ORDER_DELAY_CLOSE_TOPIC_KEY,
         selectorExpression = TicketRocketMQConstant.ORDER_DELAY_CLOSE_TAG_KEY,

@@ -149,7 +149,7 @@ public final class TrainSeatTypeSelector {
                 .requestParam(requestParam)
                 .build();
         try {
-            return abstractStrategyChoose.chooseAndExecuteResp(buildStrategyKey, selectSeatDTO);
+            return abstractStrategyChoose.chooseAndExecuteResp(buildStrategyKey, selectSeatDTO);//这里会进入executeResp这个方法
         } catch (ServiceException ex) {
             throw new ServiceException("当前车次列车类型暂未适配，请购买G35或G39车次");
         }
